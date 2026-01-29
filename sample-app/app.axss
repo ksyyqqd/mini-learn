@@ -1,0 +1,7 @@
+.container { max-width:720px; margin:16px auto; background:#fff; padding:20px; border-radius:8px }
+.counter { font-size:20px; margin:8px 0 }
+.counter strong { color:#333 }
+.even { color:#0a7; font-weight:700 }
+.item { color:#0a7; font-weight:700 }
+ul { padding-left:20px }
+li { padding:4px 0;color:red }

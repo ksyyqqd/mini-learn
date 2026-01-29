@@ -1,0 +1,8 @@
+body { background: #f2f6fb; color:#222 }
+h1 { color:#0b5; }
+.container { max-width:780px; margin:12px auto; background: #fff; padding:16px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.counter { font-size:18px; margin:8px 0 }
+.counter strong { color:#333 }
+.even { color: #0a7; font-weight:600 }
+ul { padding-left: 20px }
+li { padding:4px 0 }

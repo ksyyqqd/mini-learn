@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>MiniApp Renderer</title>
+    <link rel="stylesheet" href="/app.css">
+    <style>
+      body { font-family: system-ui, sans-serif; padding: 16px }
+      pre { background:#f6f8fa; padding:12px; border-radius:6px }
+    </style>
+  </head>
+  <body>
+    <h1>MiniApp Renderer (Browser)</h1>
+    <div>Server-Sent Events connected to <code>/events</code></div>
+    <h2>Rendered Output</h2>
+    <div id="render">(waiting...)</div>
+
+    <h2>Raw Data</h2>
+    <pre id="data">(waiting...)</pre>
+
+    <h2>App Console</h2>
+    <pre id="app-console">(waiting...)</pre>
+
+    <script>
+      const es = new EventSource('/events');
+      const renderEl = document.getElementById('render');
+      const dataEl = document.getElementById('data');
+      es.onmessage = (e) => {
+        try {
+          const obj = JSON.parse(e.data);
+          if (obj.type === 'console') { 
+            const c = document.getElementById('app-console');
+            const p = obj.payload;
+            const text = (p.args || []).map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
+            const line = `[${p.level}] ${text}\n`;
+            c.textContent = (c.textContent === '(waiting...)' ? '' : c.textContent) + line;
+            // 也输出到浏览器开发者控制台
+            if (console && console[p.level]) console[p.level].apply(console, p.args || []);
+            return;
+          }
+          if (obj.html) renderEl.innerHTML = obj.html;
+          dataEl.textContent = JSON.stringify(obj.data, null, 2);
+        } catch (err) {
+          dataEl.textContent = e.data;
+        }
+      };
+      es.onerror = () => { dataEl.textContent = '(connection error)'; };
+    </script>
+  </body>
+</html>
