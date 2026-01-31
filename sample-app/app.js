@@ -1,5 +1,8 @@
 // 小程序示例：注册生命周期并定期更新数据
 App({
+  data:{
+    count: 0
+  },
   onLaunch() {
     console.log('App onLaunch');
   },
@@ -17,8 +20,7 @@ let count = 0;
 function update() {
   count++;
   // setData 在 runtime 的沙箱中会被桥接到宿主/渲染层
-  setData({ page: { data: { count } } });
+  setData({  data: { count }  });
 }
 
-setInterval(update, 3000);
-// update();
+

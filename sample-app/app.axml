@@ -1,15 +1,15 @@
 <view class="container">
   <h1>MiniApp Counter</h1>
   <view class="counter">
-    <strong>Count: </strong><text>{{page.data.count}}</text>
+    <strong>Count: </strong><text>{{data.count}}</text>
   </view>
-<button onclick="update">点击更新计数</button>
-  <view class="even" a:if="{{page.data.count % 2 === 0}}">
+<button onclick="handleUpdate">点击更新计数</button>
+  <view class="even" a:if="{{data.count % 2 === 0}}">
     <p>当前为偶数</p>
   </view>
 
   <ul>
-    <li class="item" a:for="{{page.data.count}}" a:for-item="item" a:for-index="idx">项 {{idx}}: {{item}}</li>
+    <li class="item" a:for="{{data.count}}" a:for-item="item" a:for-index="idx">项 {{idx}}: {{item}}</li>
   </ul>
 </view>
 

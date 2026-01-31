@@ -7,6 +7,7 @@
     <style>
       body { font-family: system-ui, sans-serif; padding: 16px }
       pre { background:#f6f8fa; padding:12px; border-radius:6px }
+      button { padding: 8px 16px; margin: 4px; cursor: pointer; }
     </style>
   </head>
   <body>
@@ -25,6 +26,52 @@
       const es = new EventSource('/events');
       const renderEl = document.getElementById('render');
       const dataEl = document.getElementById('data');
+      
+      // 添加全局方法调用函数
+      window.callAppMethod = async function(methodName, args = {}) {
+        console.log('Calling app method:', methodName, args);
+        try {
+          const response = await fetch('/api/callMethod', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              methodName: methodName,
+              args: args
+            })
+          });
+          
+          const result = await response.json();
+          if (!response.ok) {
+            console.error('Method call failed:', result.error || response.status);
+          } else {
+            console.log('Method call success:', result);
+          }
+        } catch (error) {
+          console.error('Method call error:', error);
+        }
+      };
+      
+      // 动态绑定onclick事件
+      function bindEvents() {
+        const buttons = document.querySelectorAll('button[onclick]');
+        buttons.forEach(button => {
+          const onclickAttr = button.getAttribute('onclick');
+          if (onclickAttr) {
+            // 提取方法名（去除括号和参数）
+            const methodName = onclickAttr.replace(/\(.*\)$/, '').trim();
+            if (methodName) {
+              button.onclick = function(e) {
+                e.preventDefault();
+                console.log('Button clicked, calling method:', methodName);
+                window.callAppMethod(methodName);
+              };
+            }
+          }
+        });
+      }
+      
       es.onmessage = (e) => {
         try {
           const obj = JSON.parse(e.data);
@@ -38,13 +85,21 @@
             if (console && console[p.level]) console[p.level].apply(console, p.args || []);
             return;
           }
-          if (obj.html) renderEl.innerHTML = obj.html;
+          if (obj.html) {
+            renderEl.innerHTML = obj.html;
+            console.log('HTML updated, binding events...');
+            // 每次渲染后重新绑定事件
+            setTimeout(bindEvents, 10);
+          }
           dataEl.textContent = JSON.stringify(obj.data, null, 2);
         } catch (err) {
           dataEl.textContent = e.data;
         }
       };
       es.onerror = () => { dataEl.textContent = '(connection error)'; };
+      
+      // 初始绑定事件
+      setTimeout(bindEvents, 100);
     </script>
   </body>
 </html>

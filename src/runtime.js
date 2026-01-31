@@ -62,6 +62,7 @@ class Runtime {
       // 通过 App 注册生命周期对象
       App: function(appDef) {
         runtime.app = appDef || {};
+        
         // 立即触发 onLaunch（兼容惯例）
         if (typeof runtime.app.onLaunch === 'function') {
           try {

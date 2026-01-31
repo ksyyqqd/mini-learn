@@ -18,13 +18,26 @@ class Renderer {
     // 当前通过 SSE 保持连接的客户端集合（每个元素为 response 对象）
     this.clients = new Set();
     this.port = port;
+    // bridge引用，用于转发方法调用
+    this.bridge = null;
+    // 存储最新的渲染数据
+    this.currentData = null;
     // 启动内置的 HTTP 服务器并准备静态资源与 SSE 端点
     this._startServer();
   }
 
   /**
+   * 设置bridge实例
+   * @param {Bridge} bridge - bridge实例
+   */
+  setBridge(bridge) {
+    this.bridge = bridge;
+  }
+
+  /**
    * 启动 HTTP 服务器并处理路由：
    * - /events: SSE（浏览器订阅渲染更新）
+   * - /api/callMethod: 处理前端方法调用请求
    * - /app.css: 返回 sample-app 的样式文件（如果存在）
    * - 其他: 从 public 目录返回静态资源（index.html、脚本等）
    */
@@ -53,8 +66,48 @@ class Renderer {
         // 通知浏览器在断开后重连的时间
         res.write('retry: 10000\n\n');
         this.clients.add(res);
+        
+        // 如果已有数据，立即发送给新连接的客户端
+        if (this.currentData) {
+          const html = this._renderTemplate(this.template, this.currentData || {});
+          const payload = JSON.stringify({ html, data: this.currentData });
+          try {
+            res.write(`data: ${payload}\n\n`);
+          } catch (e) {
+            this.clients.delete(res);
+          }
+        }
+        
         // 当连接关闭时从集合中移除
         req.on('close', () => this.clients.delete(res));
+        return;
+      }
+
+      // API端点：处理前端方法调用请求
+      if (req.url === '/api/callMethod' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => {
+          body += chunk.toString();
+        });
+        req.on('end', () => {
+          try {
+            const requestData = JSON.parse(body);
+            const { methodName, args } = requestData;
+            
+            // 通过bridge转发方法调用请求
+            if (this.bridge && typeof this.bridge.sendToJS === 'function') {
+              this.bridge.sendToJS('callMethod', { methodName, args });
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true }));
+            } else {
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Bridge not available' }));
+            }
+          } catch (error) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Invalid request format' }));
+          }
+        });
         return;
       }
 
@@ -99,6 +152,9 @@ class Renderer {
    * @param {Object} data - 渲染上下文数据（模板中可通过 {{var}} 访问）
    */
   render(data) {
+    // 保存当前数据
+    this.currentData = data;
+    
     // 将模板与数据结合生成最终 HTML
     const html = this._renderTemplate(this.template, data || {});
     // 调试：打印渲染后的 HTML 以便本地查看
