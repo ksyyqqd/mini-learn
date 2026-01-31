@@ -12,9 +12,9 @@ const htmlparser2 = require('htmlparser2');
 class Renderer {
   /**
    * 构造函数
-   * @param {number} port - 本地 HTTP 服务端口（默认 3000）
+   * @param {number} port - 本地 HTTP 服务端口（默认 3002）
    */
-  constructor(port = 3000) {
+  constructor(port = 3002) {
     // 当前通过 SSE 保持连接的客户端集合（每个元素为 response 对象）
     this.clients = new Set();
     this.port = port;
