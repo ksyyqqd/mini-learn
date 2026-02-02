@@ -2,6 +2,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const htmlparser2 = require('htmlparser2');
+const websocketPackage = require('./package');
+const Runtime = require('./runtime');
 
 /**
  * Renderer 类
@@ -12,18 +14,22 @@ const htmlparser2 = require('htmlparser2');
 class Renderer {
   /**
    * 构造函数
-   * @param {number} port - 本地 HTTP 服务端口（默认 3002）
+   * @param {number} port - HTTP 服务端口（默认 3002）
+   * @param {number} wsPort - WebSocket 服务端口（默认 3003）
    */
-  constructor(port = 3002) {
-    // 当前通过 SSE 保持连接的客户端集合（每个元素为 response 对象）
-    this.clients = new Set();
+  constructor(port = 3002, wsPort = 3003) {
     this.port = port;
+    this.wsPort = wsPort;
     // bridge引用，用于转发方法调用
     this.bridge = null;
     // 存储最新的渲染数据
     this.currentData = null;
-    // 启动内置的 HTTP 服务器并准备静态资源与 SSE 端点
-    this._startServer();
+    // WebSocket服务器实例
+    this.websocketServer = null;
+    // 初始数据（用于WebSocket连接成功后的首次渲染）
+    this.initialData = null;
+    // 启动服务器
+    this._startServers();
   }
 
   /**
@@ -35,13 +41,23 @@ class Renderer {
   }
 
   /**
-   * 启动 HTTP 服务器并处理路由：
-   * - /events: SSE（浏览器订阅渲染更新）
-   * - /api/callMethod: 处理前端方法调用请求
-   * - /app.css: 返回 sample-app 的样式文件（如果存在）
-   * - 其他: 从 public 目录返回静态资源（index.html、脚本等）
+   * 启动 HTTP 服务器和 WebSocket 服务器
+   * HTTP服务器用于提供静态资源
+   * WebSocket服务器用于实时双向通信
    */
-  _startServer() {
+  /**
+   * 设置初始数据，等待WebSocket连接成功后渲染
+   * @param {Object} data - 初始渲染数据
+   */
+  setInitialData(data) {
+    this.initialData = data;
+    // 如果已经有客户端连接，立即渲染
+    if (this.websocketServer && this.websocketServer.getClientCount() > 0) {
+      this.render(Runtime.app.data);
+    }
+  }
+
+  _startServers() {
     const publicPath = path.join(__dirname, '..', 'public');
 
     // 加载模板（类 WXML，位于 sample-app/app.axml）
@@ -55,59 +71,19 @@ class Renderer {
       this.template = '<div>(no template)</div>';
     }
 
-    const server = http.createServer((req, res) => {
-      // SSE 端点：浏览器通过 EventSource 连接到 /events 接收渲染推送
-      if (req.url === '/events') {
-        res.writeHead(200, {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        });
-        // 通知浏览器在断开后重连的时间
-        res.write('retry: 10000\n\n');
-        this.clients.add(res);
-        
-        // 如果已有数据，立即发送给新连接的客户端
-        if (this.currentData) {
-          const html = this._renderTemplate(this.template, this.currentData || {});
-          const payload = JSON.stringify({ html, data: this.currentData });
-          try {
-            res.write(`data: ${payload}\n\n`);
-          } catch (e) {
-            this.clients.delete(res);
-          }
+    // 启动 HTTP 服务器（用于静态资源）
+    const httpServer = http.createServer((req, res) => {
+      // 提供 websocket-client.js 文件
+      if (req.url === '/websocket-client.js') {
+        const wsClientPath = path.join(__dirname, '..', 'public', 'websocket-client.js');
+        try {
+          const js = fs.readFileSync(wsClientPath, 'utf8');
+          res.writeHead(200, { 'Content-Type': 'text/javascript' });
+          res.end(js);
+        } catch (e) {
+          res.writeHead(404);
+          res.end('/* websocket-client.js not found */');
         }
-        
-        // 当连接关闭时从集合中移除
-        req.on('close', () => this.clients.delete(res));
-        return;
-      }
-
-      // API端点：处理前端方法调用请求
-      if (req.url === '/api/callMethod' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => {
-          body += chunk.toString();
-        });
-        req.on('end', () => {
-          try {
-            const requestData = JSON.parse(body);
-            const { methodName, args } = requestData;
-            
-            // 通过bridge转发方法调用请求
-            if (this.bridge && typeof this.bridge.sendToJS === 'function') {
-              this.bridge.sendToJS('callMethod', { methodName, args });
-              res.writeHead(200, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ success: true }));
-            } else {
-              res.writeHead(500, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ error: 'Bridge not available' }));
-            }
-          } catch (error) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Invalid request format' }));
-          }
-        });
         return;
       }
 
@@ -140,15 +116,67 @@ class Renderer {
       });
     });
 
-    server.listen(this.port, () => {
+    httpServer.listen(this.port, () => {
       console.log(`Renderer HTTP server running: http://localhost:${this.port}`);
     });
 
-    this.server = server;
+    // 启动 WebSocket 服务器
+    this.websocketServer = new websocketPackage.WebSocketServer(this.wsPort);
+    
+    // 注册客户端连接事件处理器
+    this.websocketServer.registerClientConnectedHandler((ws, payload) => {
+      console.log('[Renderer] WebSocket client connected, checking for initial data');
+      if (this.initialData) {
+        console.log('[Renderer] Rendering initial data after WebSocket connection');
+        this.render(this.initialData);
+      }
+    });
+    
+    // 注册消息处理器
+    this._registerMessageHandlers();
+    
+    this.httpServer = httpServer;
+  }
+
+  /**
+   * 注册WebSocket消息处理器
+   */
+  _registerMessageHandlers() {
+    // 注册方法调用处理器
+    this.websocketServer.registerHandler(
+      websocketPackage.WebSocketProtocol.MESSAGE_TYPES.CALL_METHOD,
+      (ws, payload) => {
+        const { methodName, args } = payload;
+        console.log(`[Renderer] Received method call: ${methodName}`, args);
+        
+        // 通过bridge转发方法调用请求
+        if (this.bridge && typeof this.bridge.sendToJS === 'function') {
+          this.bridge.sendToJS('callMethod', { methodName, args });
+          // 发送确认响应
+          const response = websocketPackage.WebSocketProtocol.buildMethodCallResponse(
+            true, 
+            methodName
+          );
+          ws.send(JSON.stringify(response));
+        } else {
+          const response = websocketPackage.WebSocketProtocol.buildMethodCallResponse(
+            false, 
+            methodName, 
+            null, 
+            'Bridge not available'
+          );
+          ws.send(JSON.stringify(response));
+        }
+      }
+    );
   }
 
   /**
    * render - 将数据渲染为 HTML 并推送到已连接的浏览器客户端（通过 SSE）
+   * @param {Object} data - 渲染上下文数据（模板中可通过 {{var}} 访问）
+   */
+  /**
+   * render - 将数据渲染为 HTML 并推送到已连接的浏览器客户端（通过 WebSocket）
    * @param {Object} data - 渲染上下文数据（模板中可通过 {{var}} 访问）
    */
   render(data) {
@@ -159,42 +187,39 @@ class Renderer {
     const html = this._renderTemplate(this.template, data || {});
     // 调试：打印渲染后的 HTML 以便本地查看
     console.log('[Renderer] rendered HTML:\n', html);
-    const payload = JSON.stringify({ html, data });
+    
+    // 构建渲染消息
+    const message = websocketPackage.WebSocketProtocol.buildRenderMessage(html, data);
 
     // 如果没有浏览器客户端连接，回退到控制台输出
-    if (this.clients.size === 0) {
-      console.log('[Renderer] no browser clients, fallback to console:\n', payload);
+    if (this.websocketServer.getClientCount() === 0) {
+      console.log('[Renderer] no browser clients, fallback to console:\n', JSON.stringify(message));
       return;
     }
 
-    // 向所有已连接的 SSE 客户端推送数据（格式为 data: ...\n\n）
-    for (const res of this.clients) {
-      try {
-        res.write(`data: ${payload}\n\n`);
-      } catch (e) {
-        // 若写入失败，移除该客户端
-        this.clients.delete(res);
-      }
-    }
+    // 向所有已连接的 WebSocket 客户端推送数据
+    this.websocketServer.broadcast(message);
   }
 
   /**
-   * sendConsole - 将来自 runtime 的 console 消息推送到所有 SSE 客户端
-   * payload: { level: 'log'|'info'|'warn'|'error', args: [...] }
+   * sendConsole - 将来自 runtime 的 console 消息推送到所有 WebSocket 客户端
+   * @param {Object} payload - 控制台消息 { level, args }
    */
   sendConsole(payload) {
-    const message = JSON.stringify({ type: 'console', payload });
+    const message = websocketPackage.WebSocketProtocol.buildConsoleMessage(
+      payload.level, 
+      payload.args
+    );
     console.log('[Renderer] sendConsole', payload);
-    for (const res of this.clients) {
-      try {
-        res.write(`data: ${message}\n\n`);
-      } catch (e) {
-        this.clients.delete(res);
-      }
-    }
+    this.websocketServer.broadcast(message);
   }
 
-  // --- 简易 WXML 风格模板解析与渲染器 ---
+  /**
+   * 处理客户端发送的消息
+   * @param {WebSocket} ws - WebSocket连接
+   * @param {Object} data - 消息数据
+   */
+
   /**
    * _renderTemplate
    * - 将模板字符串解析为中间 DOM（node 列表），再逐节点渲染为 HTML

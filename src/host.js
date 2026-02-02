@@ -13,6 +13,7 @@ renderer.setBridge(bridge);
 // 当 runtime 调用 setData 时，bridge 转发给渲染器
 bridge.on('setData', (payload) => {
   renderer.render(payload);
+  renderer.setInitialData(payload);
   if (typeof runtime.triggerLifecycle === 'function') {
     runtime.triggerLifecycle('onUpdate', { data: payload });
   }
@@ -52,4 +53,5 @@ const appPath = path.join(__dirname, '..', 'sample-app', 'app.js');
 console.log('Starting miniapp container. Running sample app:', appPath);
 //初始化执行
 runtime.run(appPath);
-renderer.render(runtime.app.data);
+// 设置初始数据
+renderer.setInitialData(runtime.app.data);

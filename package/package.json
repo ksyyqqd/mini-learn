@@ -1,0 +1,22 @@
+{
+  "name": "@miniapp/websocket",
+  "version": "1.0.0",
+  "description": "WebSocket utilities for miniapp container",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "websocket",
+    "miniapp",
+    "realtime",
+    "communication"
+  ],
+  "author": "MiniApp Container Team",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {},
+  "peerDependencies": {}
+}

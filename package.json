@@ -1,13 +1,21 @@
 {
   "name": "miniapp-container",
-  "version": "0.1.0",
-  "description": "A minimal mini-program container demo (host + JS runtime + bridge + renderer)",
+  "version": "1.0.0",
+  "description": "",
   "main": "src/host.js",
   "scripts": {
-    "start": "node src/host.js"
+    "start": "node src/host.js",
+    "dev": "node src/host.js"
   },
   "dependencies": {
-    "htmlparser2": "^8.0.0"
+    "htmlparser2": "^8.0.0",
+    "ws": "^8.13.0"
   },
+  "keywords": [
+    "miniapp",
+    "container",
+    "learning"
+  ],
+  "author": "",
   "license": "MIT"
 }
