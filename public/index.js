@@ -104,9 +104,9 @@
       
       // 动态绑定onclick事件
       function bindEvents() {
-        const buttons = document.querySelectorAll('button[onclick]');
+        const buttons = document.querySelectorAll('button[onTap]');
         buttons.forEach(button => {
-          const onclickAttr = button.getAttribute('onclick');
+          const onclickAttr = button.getAttribute('onTap');
           if (onclickAttr) {
             const methodName = onclickAttr.replace(/\(.*\)$/, '').trim();
             if (methodName) {

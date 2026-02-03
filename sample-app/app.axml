@@ -3,7 +3,7 @@
   <view class="counter">
     <strong>Count: </strong><text>{{data.count}}</text>
   </view>
-<button onclick="handleUpdate">点击更新计数</button>
+<button onTap="handleUpdate">点击更新计数</button>
   <view class="even" a:if="{{data.count % 2 === 0}}">
     <p>当前为偶数</p>
   </view>

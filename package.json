@@ -5,7 +5,8 @@
   "main": "src/host.js",
   "scripts": {
     "start": "node src/host.js",
-    "dev": "node src/host.js"
+    "dev": "node src/host.js",
+    "build-extension": "node build-extension.js"
   },
   "dependencies": {
     "htmlparser2": "^8.0.0",

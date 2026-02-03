@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>小程序容器</h1>
+    
+    <div class="app-selector">
+      <label for="appSelect">选择小程序:</label>
+      <select id="appSelect">
+        <option value="sample-app">示例小程序</option>
+        <option value="counter-app">计数器小程序</option>
+        <option value="todo-app">待办事项小程序</option>
+      </select>
+      <button id="launchBtn">启动</button>
+    </div>
+
+    <div class="controls">
+      <button id="showBtn">显示小程序</button>
+      <button id="showWindowBtn">打开独立窗口</button>
+      <button id="hideBtn">隐藏小程序</button>
+      <button id="refreshBtn">刷新</button>
+    </div>
+
+    <div class="data-display">
+      <h3>数据状态:</h3>
+      <pre id="dataDisplay">未启动任何小程序</pre>
+    </div>
+
+    <div class="logs">
+      <h3>运行日志:</h3>
+      <div id="logContainer"></div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

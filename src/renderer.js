@@ -16,8 +16,9 @@ class Renderer {
    * 构造函数
    * @param {number} port - HTTP 服务端口（默认 3002）
    * @param {number} wsPort - WebSocket 服务端口（默认 3003）
+   * @param {WebSocketServer} externalWebSocketServer - 外部WebSocket服务器实例（可选）
    */
-  constructor(port = 3002, wsPort = 3003) {
+  constructor(port = 3002, wsPort = 3003, externalWebSocketServer = null) {
     this.port = port;
     this.wsPort = wsPort;
     // bridge引用，用于转发方法调用
@@ -25,11 +26,12 @@ class Renderer {
     // 存储最新的渲染数据
     this.currentData = null;
     // WebSocket服务器实例
-    this.websocketServer = null;
+    this.websocketServer = externalWebSocketServer;
     // 初始数据（用于WebSocket连接成功后的首次渲染）
     this.initialData = null;
     // 启动服务器
     this._startServers();
+    console.log(`Renderer ready, listening on port ${this.port}`);
   }
 
   /**
@@ -53,11 +55,12 @@ class Renderer {
     this.initialData = data;
     // 如果已经有客户端连接，立即渲染
     if (this.websocketServer && this.websocketServer.getClientCount() > 0) {
-      this.render(Runtime.app.data);
+      this.render(data);
     }
   }
 
   _startServers() {
+    console.log('[Renderer] starting servers...');
     const publicPath = path.join(__dirname, '..', 'public');
 
     // 加载模板（类 WXML，位于 sample-app/app.axml）
@@ -117,11 +120,22 @@ class Renderer {
     });
 
     httpServer.listen(this.port, () => {
-      console.log(`Renderer HTTP server running: http://localhost:${this.port}`);
+      console.log(`[Renderer] HTTP server running: http://localhost:${this.port}`);
     });
 
-    // 启动 WebSocket 服务器
-    this.websocketServer = new websocketPackage.WebSocketServer(this.wsPort);
+    // 启动 WebSocket 服务器（如果还没有的话）
+    if (!this.websocketServer) {
+      try {
+        console.log(`[Renderer] Attempting to start WebSocket server on port ${this.wsPort}`);
+        this.websocketServer = new websocketPackage.WebSocketServer(this.wsPort);
+        console.log(`[Renderer] WebSocket server created successfully on port ${this.wsPort}`);
+      } catch (error) {
+        console.error(`[Renderer] Failed to start WebSocket server on port ${this.wsPort}:`, error);
+        throw error;
+      }
+    } else {
+      console.log(`[Renderer] Using existing WebSocket server on port ${this.wsPort}`);
+    }
     
     // 注册客户端连接事件处理器
     this.websocketServer.registerClientConnectedHandler((ws, payload) => {
@@ -372,6 +386,32 @@ class Renderer {
     };
     console.log("nodesRoot",nodesRoot)
     return nodesRoot.map(convert);
+  }
+
+  /**
+   * 清理资源
+   * 关闭HTTP服务器和WebSocket连接
+   */
+  cleanup() {
+    // 关闭HTTP服务器
+    if (this.httpServer) {
+      this.httpServer.close(() => {
+        console.log('[Renderer] HTTP server closed');
+      });
+    }
+    
+    // 关闭WebSocket服务器
+    if (this.websocketServer) {
+      this.websocketServer.close();
+      console.log('[Renderer] WebSocket server closed');
+    }
+    
+    // 清理客户端连接
+    if (this.clients) {
+      this.clients.clear();
+    }
+    
+    console.log('[Renderer] Cleanup completed');
   }
 }
 

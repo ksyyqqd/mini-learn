@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>小程序窗口</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .miniapp-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .miniapp-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .miniapp-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .control-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+
+    .control-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .miniapp-content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background: #fafafa;
+    }
+
+    .miniapp-placeholder {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+      margin-top: 50px;
+      padding: 20px;
+    }
+
+    .miniapp-data {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .miniapp-data h3 {
+      margin-top: 0;
+      color: #333;
+      font-size: 16px;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+
+    .miniapp-data pre {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 4px;
+      border: 1px solid #e9ecef;
+      font-size: 12px;
+      white-space: pre-wrap;
+      margin: 10px 0;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    /* 渲染HTML内容的样式 */
+    .miniapp-rendered {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .miniapp-html-content {
+      background: #ffffff;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 15px;
+      min-height: 100px;
+    }
+
+    /* 确保渲染的HTML内容中的元素样式 */
+    .miniapp-html-content h1,
+    .miniapp-html-content h2,
+    .miniapp-html-content h3 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .miniapp-html-content button {
+      padding: 8px 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 5px;
+    }
+
+    .miniapp-html-content button:hover {
+      background: #0056b3;
+    }
+
+    .miniapp-html-content input,
+    .miniapp-html-content textarea {
+      padding: 8px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 14px;
+      margin: 5px;
+    }
+
+    .miniapp-html-content ul,
+    .miniapp-html-content ol {
+      padding-left: 20px;
+    }
+
+    .miniapp-html-content li {
+      margin: 5px 0;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .action-btn {
+      padding: 8px 16px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .action-btn:hover {
+      background: #5a6fd8;
+    }
+
+    .action-btn.secondary {
+      background: #6c757d;
+    }
+
+    .action-btn.secondary:hover {
+      background: #5a6268;
+    }
+
+    .status-bar {
+      background: #e9ecef;
+      padding: 8px 20px;
+      font-size: 12px;
+      color: #6c757d;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .status-connected {
+      color: #28a745;
+    }
+
+    .status-disconnected {
+      color: #dc3545;
+    }
+  </style>
+</head>
+<body>
+  <div class="miniapp-container">
+    <div class="miniapp-header">
+      <h2 class="miniapp-title">小程序</h2>
+      <div class="header-controls">
+        <button class="control-btn" id="refreshBtn" title="刷新">↻</button>
+        <button class="control-btn" id="closeBtn" title="关闭">×</button>
+      </div>
+    </div>
+    
+    <div class="miniapp-content">
+      <div class="miniapp-placeholder" id="placeholder">
+        正在加载小程序数据...
+      </div>
+    </div>
+    
+    <div class="status-bar">
+      <div class="connection-status">
+        <span class="loading" id="loadingIndicator"></span>
+        <span id="statusText">正在连接到小程序服务...</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="runtime/window-main.js"></script>
+</body>
+</html>

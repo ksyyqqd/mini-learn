@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小程序容器插件测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .console {
+            background: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>小程序容器插件测试</h1>
+        
+        <div class="instructions">
+            <h3>使用说明：</h3>
+            <ol>
+                <li>确保已安装并启用了"小程序容器"浏览器插件</li>
+                <li>点击浏览器工具栏中的插件图标</li>
+                <li>在弹窗中选择要启动的小程序</li>
+                <li>点击"启动"按钮开始运行</li>
+                <li>使用下方的测试按钮验证功能</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>插件状态检测</h3>
+            <button onclick="checkPluginStatus()">检测插件状态</button>
+            <div id="pluginStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>小程序控制测试</h3>
+            <button onclick="testShowMiniApp()">显示小程序</button>
+            <button onclick="testHideMiniApp()">隐藏小程序</button>
+            <button onclick="testUpdateData()">更新数据</button>
+        </div>
+
+        <div class="test-section">
+            <h3>控制台输出</h3>
+            <div id="consoleOutput" class="console"></div>
+            <button onclick="clearConsole()">清空控制台</button>
+        </div>
+    </div>
+
+    <script>
+        // 重写console.log来捕获输出
+        const originalLog = console.log;
+        const consoleOutput = document.getElementById('consoleOutput');
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${args.join(' ')}`;
+            consoleOutput.appendChild(logEntry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        };
+
+        function clearConsole() {
+            consoleOutput.innerHTML = '';
+        }
+
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `status ${type}`;
+            element.textContent = message;
+        }
+
+        async function checkPluginStatus() {
+            try {
+                // 检查MiniApp对象是否存在
+                if (typeof window.MiniApp !== 'undefined') {
+                    console.log('✓ MiniApp对象已成功注入');
+                    updateStatus('pluginStatus', '插件已正确安装并运行', 'success');
+                    
+                    // 测试基本方法
+                    console.log('测试MiniApp方法:');
+                    console.log('- MiniApp.show:', typeof window.MiniApp.show);
+                    console.log('- MiniApp.hide:', typeof window.MiniApp.hide);
+                    console.log('- MiniApp.updateData:', typeof window.MiniApp.updateData);
+                    console.log('- MiniApp.setTitle:', typeof window.MiniApp.setTitle);
+                } else {
+                    console.log('✗ MiniApp对象未找到，请确保插件已正确安装');
+                    updateStatus('pluginStatus', '插件未正确安装或未在当前页面激活', 'error');
+                }
+            } catch (error) {
+                console.error('检测插件状态时出错:', error);
+                updateStatus('pluginStatus', `检测失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testShowMiniApp() {
+            if (typeof window.MiniApp !== 'undefined') {
+                console.log('尝试显示小程序...');
+                window.MiniApp.show({
+                    title: '测试小程序',
+                    data: { message: 'Hello from test page!' }
+                });
+            } else {
+                console.log('请先检测插件状态');
+            }
+        }
+
+        function testHideMiniApp() {
+            if (typeof window.MiniApp !== 'undefined') {
+                console.log('尝试隐藏小程序...');
+                window.MiniApp.hide();
+            } else {
+                console.log('请先检测插件状态');
+            }
+        }
+
+        function testUpdateData() {
+            if (typeof window.MiniApp !== 'undefined') {
+                const testData = {
+                    timestamp: new Date().toISOString(),
+                    random: Math.random(),
+                    test: '数据更新测试'
+                };
+                console.log('更新小程序数据:', testData);
+                window.MiniApp.updateData(testData);
+            } else {
+                console.log('请先检测插件状态');
+            }
+        }
+
+        // 页面加载完成后自动检测
+        window.addEventListener('load', () => {
+            console.log('页面加载完成，准备测试小程序容器插件');
+            setTimeout(checkPluginStatus, 1000); // 等待Content Script注入
+        });
+    </script>
+</body>
+</html>

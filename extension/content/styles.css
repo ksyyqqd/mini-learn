@@ -1,0 +1,92 @@
+.miniapp-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 350px;
+  height: 500px;
+  background: white;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  z-index: 10000;
+  display: none;
+  flex-direction: column;
+}
+
+.miniapp-container.visible {
+  display: flex;
+}
+
+.miniapp-header {
+  background: #007bff;
+  color: white;
+  padding: 12px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.miniapp-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.miniapp-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.miniapp-close:hover {
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+}
+
+.miniapp-content {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  background: #f8f9fa;
+}
+
+.miniapp-placeholder {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  margin-top: 50px;
+}
+
+.miniapp-data {
+  background: white;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  margin-bottom: 15px;
+}
+
+.miniapp-data h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.miniapp-data pre {
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+  font-size: 12px;
+  white-space: pre-wrap;
+  margin: 10px 0;
+}
